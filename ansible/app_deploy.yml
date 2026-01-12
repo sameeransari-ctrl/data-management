@@ -1,0 +1,188 @@
+---
+- hosts: devserver
+  become: yes
+  become_user: developer
+
+  tasks:
+  - name: Environment variables
+    debug: msg="repository {{ git_repo }}, dir {{ project_path }}, branch {{ git_branch }}"
+
+  - name: "Check package facts"
+    package_facts:
+      manager: "auto"
+
+  - name: Check Repository Exists
+    stat:
+      path: "{{ project_path }}/{{ project_name }}"
+    register: output
+  - debug:
+      msg: "Repository exists..."
+    when: output.stat.exists
+
+  - name: Update Repository Permissions
+    become_user: root
+    file:
+      path: "{{ project_path }}/{{ project_name }}"
+      state: directory
+      mode: 0775
+      recurse: yes
+      owner: developer
+      group: www-data
+    when: output.stat.exists
+
+  - name: Enable Maintenance Mode
+    command: /usr/bin/php8.2 artisan down
+    when: output.stat.exists and maintenance_mode == 'enable'
+    args:
+      chdir: "{{ project_path }}/{{ project_name }}"
+
+  - name: Clone Or Pull git repository
+    become_user: root
+    git:
+      repo: "{{ git_repo }}"
+      dest: "{{ project_path }}/{{ project_name }}"
+      version: "{{ git_branch }}"
+      key_file: "{{ key_file }}"
+      accept_hostkey: yes
+      clone: yes
+      update: yes
+      force: yes
+    register: repo
+
+  - name: Change Repository Permissions
+    become_user: root
+    file:
+      path: "{{ project_path }}/{{ project_name }}"
+      state: directory
+      mode: 0775
+      recurse: yes
+      owner: developer
+      group: www-data
+
+  - name: Check env file exists
+    stat:
+      path: "{{ project_path }}/{{ project_name }}/.env"
+    register: file
+  - debug:
+      msg: "env file exists..."
+    when: file.stat.exists
+  - debug:
+      msg: "env file not found"
+    when: file.stat.exists == False
+
+  - name: copy .env.example file to .env
+    copy:
+      src: "{{ project_path }}/{{ project_name }}/.env.example"
+      dest: "{{ project_path }}/{{ project_name }}/.env"
+      remote_src: yes
+    when: file.stat.exists == False
+
+  - name: copy input environment variables in to .env file
+    copy:
+      content: "{{ envfile_content }}"
+      dest: "{{ project_path }}/{{ project_name }}/.env"
+      remote_src: yes
+    when: envfile_option == 'yes' and envfile_content != 'null'
+
+  - name: Check Vendor exist or not
+    stat:
+      path: "{{ project_path }}/{{ project_name }}/vendor"
+    register: vendor_output
+  - debug:
+      msg: "Vendor exists..."
+    when: vendor_output.stat.exists
+  - debug:
+      msg: "Vendor not found"
+    when: vendor_output.stat.exists == False
+
+  - name: "Install Composer dependencies"
+    command: "/usr/bin/php8.2 /usr/local/bin/composer {{ item }}"
+    with_items:
+    - install
+    - dump-autoload
+    register: composer_result
+    args:
+      chdir: "{{ project_path }}/{{ project_name }}"
+  - debug:
+      msg: "{{ composer_result }}"
+
+  - name: "Update Composer dependencies"
+    command: /usr/bin/php8.2 /usr/local/bin/composer update
+    register: composer_update_result
+    when: (composer_update_input == 'yes')
+    args:
+      chdir: "{{ project_path }}/{{ project_name }}"
+  - debug:
+      msg: "{{ composer_update_result }}"
+
+  - name: Install Nodejs
+    apt:
+      name: nodejs
+      state: present
+    when: "'nodejs' not in ansible_facts.packages"
+
+  - name: Install NPM
+    npm:
+      path: "{{ project_path }}/{{ project_name }}"
+      state: present
+
+  - name: Running NPM
+    command: npm run prod
+    register: npm_result
+    args:
+      chdir: "{{ project_path }}/{{ project_name }}"
+    ignore_errors: yes
+  - debug:
+      msg: "{{ npm_result }}"
+
+  - name: Run the migrations
+    command: /usr/bin/php8.2 artisan migrate --force
+    when: (migration_command_input == 'no')
+    args:
+      chdir: "{{ project_path }}/{{ project_name }}"
+
+  - name: Run the fresh migrations
+    command: /usr/bin/php8.2 artisan migrate:fresh --seed --force
+    when: (migration_command_input == 'yes')
+    args:
+      chdir: "{{ project_path }}/{{ project_name }}"
+
+  - name: Disable Maintainance Mode
+    command: /usr/bin/php8.2 artisan up
+    when: output.stat.exists and maintenance_mode == 'enable'
+    args:
+      chdir: "{{ project_path }}/{{ project_name }}"
+
+  - name: Update Repository's Directory Permissions
+    become_user: root
+    file:
+      path: "{{ project_path }}/{{ project_name }}"
+      state: directory
+      mode: 0775
+      recurse: yes
+      owner: developer
+      group: www-data
+
+  - name: Update Repository's File Permissions
+    become_user: root
+    command: find "{{ project_path }}/{{ project_name }}" -type f -exec chmod 644 {} \;
+
+  - name: Update Storage Directory's Permissions
+    become_user: root
+    file:
+      path: "{{ project_path }}/{{ project_name }}/storage"
+      state: directory
+      mode: 0755
+      recurse: yes
+      owner: www-data
+      group: www-data
+
+  - name: Update Upload Directory's Permissions
+    become_user: root
+    file:
+      path: "{{ project_path }}/{{ project_name }}/public/"
+      state: directory
+      mode: 0775
+      recurse: yes
+      owner: developer
+      group: www-data

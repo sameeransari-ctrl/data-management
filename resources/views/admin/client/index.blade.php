@@ -1,0 +1,152 @@
+@extends('layouts.admin.app')
+@section('title', __('labels.client_management'))
+@section('content')
+<!-- content @s -->
+<div class="nk-content">
+    <div class="container-fluid">
+        <div class="nk-content-inner">
+            <div class="nk-content-body">
+                <div class="nk-block-head nk-block-head-sm">
+                    <div class="nk-block-head nk-block-head-sm">
+                        <div class="nk-block-between">
+                            <div class="nk-block-head-content">
+                                <h3 class="nk-block-title page-title">{{__('labels.client_management')}}</h3>
+                                <nav>
+                                    <ul class="breadcrumb breadcrumb-arrow">
+                                        <li class="breadcrumb-item">
+                                            <a href="{{route('admin.dashboard')}}">{{__('labels.dashboard')}}</a>
+                                        </li>
+                                        <li class="breadcrumb-item active">{{__('labels.client_management')}}</li>
+                                    </ul>
+                                </nav>
+                            </div><!-- .nk-block-head-content -->
+                            <div class="nk-block-head-content">
+                                <div class="toggle-wrap nk-block-tools-toggle">
+                                    <a href="#" class="btn btn-icon btn-trigger toggle-expand me-n1" data-target="pageMenu">
+                                        <em class="icon ni ni-more-v"></em>
+                                    </a>
+                                    <div class="toggle-expand-content" data-content="pageMenu">
+                                    <form id='resetFormFilter'>
+                                        <ul class="nk-block-tools flex-wrap gx-3 gy-2">
+                                            <li>
+                                                <div class="dropdown">
+                                                    <a href="javascript:void(0);" class="btn btn-trigger btn-icon dropdown-toggle" data-bs-toggle="dropdown">
+                                                        <div class="dot dot-primary d-none" id="client_filter_badge"></div>
+                                                        <em class="icon ni ni-filter-alt"></em>
+                                                    </a>
+                                                    <div class="filter-wg dropdown-menu dropdown-menu-xl dropdown-menu-end">
+                                                        <div class="dropdown-head">
+                                                            <span class="sub-title dropdown-title">{{__('labels.filter')}}</span>
+                                                        </div>
+                                                        <div class="dropdown-body dropdown-body-rg">
+                                                            <div class="row g-sm-3 g-2">
+                                                                <div class="col-sm-6">
+                                                                    <div class="form-group">
+                                                                        <label class="overline-title overline-title-alt" >{{__('labels.status')}}</label>
+                                                                        <select class="form-select js-select2" id='searchStatus' data-placeholder="{{__('labels.select_status')}}" data-minimum-results-for-search="Infinity">
+                                                                            <option></option>
+                                                                            @foreach ($statusList as $key => $label)
+                                                                                <option value="{{ $label }}">{{ ucfirst($label) }}</option>
+                                                                            @endforeach
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-sm-6">
+                                                                    <div class="form-group">
+                                                                        <label class="overline-title overline-title-alt" >{{__('labels.role')}}</label>
+                                                                        <select class="form-select js-select2" id='searchType' data-placeholder="{{__('labels.select_role')}}" >
+                                                                            <option></option>
+                                                                            @foreach ($roles as $role)
+                                                                                <option value="{{  $role->id }}">{{ ucfirst($role->name) }}</option>
+                                                                            @endforeach
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-sm-12">
+                                                                    <div class="form-group">
+                                                                        <label class="overline-title overline-title-alt">{{__('labels.registration_date_duration')}}</label>
+                                                                        <div class="form-control-wrap">
+                                                                            <div class="input-group">
+                                                                                <input type="text" id="fromDate" class="form-control shadow-none date-picker" placeholder="{{__('labels.enter_start_date')}}" data-date-format="yyyy-mm-dd">
+                                                                                <div class="input-group-addon">TO</div>
+                                                                                <input type="text" id="toDate" class="form-control shadow-none date-picker" placeholder="{{__('labels.enter_end_date')}}" data-date-format="yyyy-mm-dd">
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="dropdown-foot between">
+                                                            <a class="clickable cursor-pointer" id="resetFilter">{{__('labels.reset_filter')}}</a>
+                                                            <a class="btn btn-primary btn-sm" id="searchFilter">{{__('labels.filter')}}</a>
+                                                        </div>
+                                                    </div><!-- .filter-wg -->
+                                                </div>
+                                            </li>
+                                            <li><a class="btn btn-white btn-outline-light exportCsv"><em class="icon ni ni-download-cloud"></em><span>{{__('labels.export')}}</span></a></li>
+                                            @can('admin.client.create')
+                                            <li>
+                                                <a href="{{route('admin.client.create')}}" class="btn btn-primary fs-resize addEditClient" id="addClientBtn">
+                                                    <em class="icon ni ni-plus"></em>
+                                                    <span class="p-left">{{__('labels.add_client')}}</span>
+                                                </a>
+                                            </li>
+                                            @endcan
+                                        </ul>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div><!-- .nk-block-head-content -->
+                        </div><!-- .nk-block-between -->
+                    </div><!-- .nk-block-head -->
+                </div>
+                    <div class="nk-block nk-block-lg">
+                        <div class="card card-preview">
+                            <div class="card-inner ">
+                                <div class="common-table">
+                                    <table class="datatable-init nowrap table" id="client-list-table">
+                                        <caption>{{__('labels.client_list')}}</caption>
+                                        <thead>
+                                            <tr>
+                                                <th class="nosort nk-tb-col-tools id">{{__('labels.serial_no')}}</th>
+                                                <th class="name">{{__('labels.name')}}</th>
+                                                <th class="phone_number">{{__('labels.mobile')}}</th>
+                                                <th class="role w-200px">{{__('labels.role')}}</th>
+                                                <th class="nosort product_count">{{__('labels.uploded_product_count')}}</th>
+                                                <th class="nosort created_at">{{__('labels.date')}}</th>
+                                                <th class="nosort text-center status">{{__('labels.status')}}</th>
+                                                <th class="nosort nk-tb-col-tools text-center actions">{{__('labels.action')}}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td colspan="9">
+                                                    <div id="loaderTb"></div>
+                                                </td>
+                                                <td class="d-none"></td>
+                                                <td class="d-none"></td>
+                                                <td class="d-none w-min-300px white_spaceWrap"></td>
+                                                <td class="d-none"></td>
+                                                <td class="d-none"></td>
+                                                <td class="d-none"></td>
+                                                <td class="d-none"></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @endsection
+    @push('scripts')
+    <script nonce="{{csp_nonce('script')}}">
+        var canEdit = "{{auth()->user()->can('admin.client.edit')}}";
+        var canView = "{{auth()->user()->can('admin.client.show')}}";
+    </script>
+    {!! returnScriptWithNonce(asset_path('assets/js/admin/client/index.js')) !!}
+    @endpush

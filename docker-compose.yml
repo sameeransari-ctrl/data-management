@@ -1,0 +1,114 @@
+version: '3'
+services:
+  
+  #PHP Service
+  app:
+    build:
+      context: .
+      dockerfile: ./docker/php/Dockerfile
+      args:
+        - PHP_VERSION=${PHP_VERSION:-latest}
+        - NODE_VERSION=${NODE_VERSION:-latest}
+    image: laravel-php:${PHP_VERSION}
+    container_name: ${PROJECT_NAME}-app
+    restart: unless-stopped
+    tty: true
+    working_dir: /var/www/html
+    depends_on:
+      mysql:
+        condition: service_healthy
+    #Enable redis setting as per requiremnt
+      # redis:
+      #   condition: service_started
+    links:
+      - mysql
+    volumes:
+      - .:/var/www/html
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - app-network
+
+  #Nginx Service
+  webserver:
+    image: nginx:alpine
+    container_name: ${PROJECT_NAME}-nginx
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "${NGINX_PORT}:80"
+      - "${NGINX_SSL_PORT}:443"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/conf.d/:/etc/nginx/conf.d/
+    depends_on:
+      - app
+    networks:
+      - app-network
+  
+  #Mysql Service
+  mysql:
+    build:
+      context: ./docker/mysql
+      args:
+        - MYSQL_VERSION=${MYSQL_VERSION:-latest}
+    image: mysql:${MYSQL_VERSION}
+    container_name: ${PROJECT_NAME}-mysql
+    restart: unless-stopped
+    security_opt:
+      - seccomp:unconfined
+    volumes:
+      - dbdata:/var/lib/mysql
+     #Enable this if you want to restore any sql file and keep file on the same path.
+      # - ./docker/mysql/:/docker-entrypoint-initdb.d/
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    healthcheck:
+      test: "mysql $$MYSQL_DATABASE -u$$MYSQL_USER -p$$MYSQL_PASSWORD -e 'SHOW DATABASES;use $MYSQL_DATABASE;show tables;'"
+      interval: 2m
+      timeout: 8m
+      retries: 5
+    ports:
+      - "${MYSQL_PORT}:3306"
+    networks:
+      - app-network
+  
+  #Redis Service
+  redis:
+    image: redis:alpine
+    container_name: ${PROJECT_NAME}-redis
+    restart: unless-stopped
+    volumes:
+      - redisdata:/data
+    ports:
+      - "${REDIS_PORT}:6379"
+    networks:
+      - app-network
+  
+  #Mailhog Service
+  mailhog:
+    # build:
+    #   context: ./docker/MailHog
+    image: 'mailhog/mailhog:${MAILHOG_VERSION:-latest}'
+    container_name: ${PROJECT_NAME}-mailhog
+    ports:
+      - '${MAILHOG_PORT}:1025'
+      - '${MAILHOG_DASHBOARD_PORT}:8025'
+    # volumes:
+    #   - /docker/MailHog:/home/mailhog 
+    networks:
+        - app-network
+
+#Docker Networks
+networks:
+  app-network:
+    driver: bridge
+#Volumes
+volumes:
+  dbdata:
+    driver: local
+  redisdata:
+    driver: local
+  

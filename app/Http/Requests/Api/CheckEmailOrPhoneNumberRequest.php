@@ -1,0 +1,37 @@
+<?php
+
+namespace App\Http\Requests\Api;
+use Illuminate\Validation\Rule;
+
+use App\Rules\{
+    EmailFormatRule
+};
+class CheckEmailOrPhoneNumberRequest extends ApiRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     *
+     * @return bool
+     */
+    public function authorize()
+    {
+        return true;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, mixed>
+     */
+    public function rules()
+    {
+        return [
+            'username_type' => 'bail|required|in:email,phone_number',
+            'email' => 'bail|nullable|required_if:username_type,email|email:strict|'
+                        .Rule::unique('users')->ignore(auth()->user()),
+            'phone_code' => 'bail|nullable|required_if:username_type,phone_number|digits_between:1,4',
+            'phone_number' => 'bail|nullable|required_if:username_type,phone_number|digits_between:10,12|'
+                        .Rule::unique('users')->ignore(auth()->user()),
+        ];
+    }
+}

@@ -1,0 +1,36 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Method up
+     *
+     * @return void
+     */
+    public function up(): void
+    {
+        Schema::table('basic_udids', function (Blueprint $table) {
+            $table->unsignedBigInteger('added_by');
+            $table->foreign('added_by')
+                ->references('id')
+                ->on('users')
+                ->onDelete('cascade')->after('name');
+        });
+    }
+
+    /**
+     * Method down
+     *
+     * @return void
+     */
+    public function down(): void
+    {
+        Schema::table('basic_udids', function (Blueprint $table) {
+            Schema::drop('added_by');
+        });
+    }
+};

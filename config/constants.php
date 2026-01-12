@@ -1,0 +1,103 @@
+<?php
+return [
+    /**
+     * OTP will be sent on Email or phone number of User
+     * Supported: "mail", "sms", "both",
+     */
+    'send_otp_by' => 'mail',
+
+    /**
+     * Reset Password will be sent on Email of the User
+     * admin: "otp", "anything else" [anything else will trigger reset link mail]
+     */
+    'reset_password' => [
+        'admin' => 'otp',
+        'client' => 'otp',
+    ],
+
+    'otp' => [
+        //'timer' => 90, // time in seconds
+        //'max_time_seconds' => 600, // time in seconds
+        'max_time' => 10, // time in minutes
+        'otp_length' => 4, // time in minutes
+        'is_default' => env('IS_DEFAULT_OTP', false),
+        'default' => env('DEFAULT_OTP', 1111),
+    ],
+    'pagination_limit' => [
+        'defaultPagination' => 10,
+    ],
+
+    /**
+     * Single device login for mobile devices
+     */
+    'single_device_login' => env('SINGLE_DEVICE_LOGIN', true),
+
+    'verification_required' => env('VERIFICATION_REQUIRED', false),
+    'admin_verification_required' => env('ADMIN_VERIFICATION_REQUIRED', false),
+
+    'regex_validation' => [
+        'strict_email' => '/^((?!.*?[_-]{2})[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-z0-9]+(\.[a-z0-9]+)*(\.[a-z]{2,5}))?$/',
+        'email' => '/^([a-zA-Z0-9_\-\.\+]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})$/i',
+        'password' => '/^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&])([a-zA-Z0-9@$!%*?&]{6,})$/',
+        'multi_space' => '/  +/',
+    ],
+
+    /**
+     * Date format to be used for the application
+     */
+    'date_format' => [
+        'admin_display' => 'd M Y, h:i A',
+    ],
+
+    /**
+     * Profile image & logo configuration
+     */
+    'image' => [
+        // 'defaultNoImage' => 'assets/images/no-image.png',
+        'productNoImage' => 'assets/images/default-img.png',
+        'defaultNoImage' => 'assets/images/default-user.jpg',
+        'profile' => [
+            'readAs' => 'public',
+            'aspectRatio' => '1/1',
+            'maxSize' => 1, // Add size in mb
+            'dimension' => '150X150', // width X height
+            'acceptType' => '.jpg,.jpeg,.png',
+            'zoomAble' => true,
+            'zoomOnWheel' => true,
+            'cropBoxResizable' => false,
+            'path' => 'profile_image',
+        ],
+        'logo' => [
+            'readAs' => 'public',
+            'aspectRatio' => '6/3',
+            'maxSize' => 5, // Add size in mb
+            'dimension' => '150X45', // width X height
+            'acceptType' => '.jpg,.jpeg,.png',
+            'zoomAble' => true,
+            'zoomOnWheel' => true,
+            'cropBoxResizable' => false,
+            'path' => 'logo',
+        ],
+    ],
+
+    'file' => [
+        'fsn' => [
+            'readAs' => 'public',
+            'maxSize' => 5, // Add size in mb
+            'path' => 'fsn_files',
+            'video' => [
+                'acceptType' => 'mimetypes:video/x-flv,video/mp4,video/3gpp,video/x-msvideo,video/x-ms-wmv,video/avi,video/mpeg,video/quicktime',
+            ],
+            'xlsx' => [
+                'acceptType' => 'mimetypes:text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ],
+        ],
+    ],
+
+    'cms' => [
+        'about_us' => env('ABOUT_US_URL', ''),
+        'privacy_policy' => env('PRIVACY_URL', ''),
+        'terms_condition' => env('TERMS_URL', ''),
+    ],
+    'generate_thumnail_time' => 1, // in seconds
+];
