@@ -596,6 +596,146 @@ let datas = {
     // },
 
 
+    // initDesignationSelect: function () {
+    //     const $designationSelect = $('.designation-title');
+
+    //     $designationSelect.select2({
+    //         placeholder: function () {
+    //             return $(this).data('placeholder');
+    //         },
+    //         width: '100%',
+    //         multiple: true,
+    //         tags: true,
+    //         maximumSelectionLength: 20,
+    //         minimumInputLength: 0,
+    //         tokenSeparators: [','],
+
+    //         ajax: {
+    //             url: route('admin.designation.list'),
+    //             dataType: 'json',
+    //             delay: 250,
+
+    //             data: function (params) {
+    //                 return {
+    //                     search: params.term || '',
+    //                     size: 20
+    //                 };
+    //             },
+
+    //             processResults: function (data, params) {
+    //                 data = Array.isArray(data) ? data : [];
+
+    //                 const termRaw = params.term ? params.term.trim() : '';
+    //                 const termLower = termRaw.toLowerCase();
+
+    //                 if (!termRaw) {
+    //                     return { results: data };
+    //                 }
+
+    //                 const existsInBackend = data.some(item =>
+    //                     item.text.toLowerCase() === termLower
+    //                 );
+
+    //                 if (existsInBackend) {
+    //                     return { results: data };
+    //                 }
+
+    //                 return {
+    //                     results: [
+    //                         {
+    //                             id: termLower,
+    //                             text: termRaw,
+    //                             isNew: true
+    //                         },
+    //                         ...data
+    //                     ]
+    //                 };
+    //             },
+
+    //             cache: false
+    //         },
+
+    //         createTag: function (params) {
+    //             const term = $.trim(params.term);
+    //             if (!term) return null;
+
+    //             // block comma-based creation here
+    //             if (term.includes(',')) return null;
+
+    //             const termLower = term.toLowerCase();
+    //             const selectedValues = $designationSelect.val() || [];
+
+    //             const exists = selectedValues.some(
+    //                 v => v.toLowerCase() === termLower
+    //             );
+
+    //             if (exists) return null;
+
+    //             return {
+    //                 id: termLower,
+    //                 text: term,
+    //                 isNew: true
+    //             };
+    //         }
+    //     });
+
+    //     /* ----------------------------------------
+    //     COMMA SPLIT HANDLER (ENTER / TAB / PASTE)
+    //     ----------------------------------------- */
+
+    //     function splitAndCreateTags(value) {
+    //         if (!value) return;
+
+    //         const parts = value
+    //             .split(',')
+    //             .map(v => v.trim())
+    //             .filter(Boolean);
+
+    //         let selected = $designationSelect.val() || [];
+
+    //         parts.forEach(part => {
+    //             const lower = part.toLowerCase();
+
+    //             if (!selected.some(v => v.toLowerCase() === lower)) {
+    //                 const option = new Option(part, lower, true, true);
+    //                 $designationSelect.append(option);
+    //                 selected.push(lower);
+    //             }
+    //         });
+
+    //         $designationSelect.trigger('change');
+    //     }
+
+    //     $designationSelect.on('select2:opening', function () {
+    //         const input = $('.select2-search__field');
+
+    //         // ENTER / TAB
+    //         input.off('keydown.split').on('keydown.split', function (e) {
+    //             if (e.key === 'Enter' || e.key === 'Tab') {
+    //                 const value = input.val();
+
+    //                 if (value) {
+    //                     e.preventDefault();
+    //                     splitAndCreateTags(value);
+    //                     input.val('');
+    //                 }
+    //             }
+    //         });
+
+    //         // PASTE
+    //         input.off('paste.split').on('paste.split', function () {
+    //             setTimeout(() => {
+    //                 const value = input.val();
+    //                 if (value) {
+    //                     splitAndCreateTags(value);
+    //                     input.val('');
+    //                 }
+    //             }, 0);
+    //         });
+    //     });
+    // },
+
+
     initDesignationSelect: function () {
         const $designationSelect = $('.designation-title');
 
@@ -632,6 +772,7 @@ let datas = {
                         return { results: data };
                     }
 
+                    // If backend already has this term → DO NOT add as tag
                     const existsInBackend = data.some(item =>
                         item.text.toLowerCase() === termLower
                     );
@@ -640,6 +781,7 @@ let datas = {
                         return { results: data };
                     }
 
+                    // Show typed value as option (but real creation is controlled later)
                     return {
                         results: [
                             {
@@ -659,17 +801,27 @@ let datas = {
                 const term = $.trim(params.term);
                 if (!term) return null;
 
-                // block comma-based creation here
+                // Block comma-based creation (handled manually)
                 if (term.includes(',')) return null;
 
                 const termLower = term.toLowerCase();
+
+                // Prevent duplicate selection (case-insensitive)
                 const selectedValues = $designationSelect.val() || [];
+                if (selectedValues.some(v => v.toLowerCase() === termLower)) {
+                    return null;
+                }
 
-                const exists = selectedValues.some(
-                    v => v.toLowerCase() === termLower
-                );
+                // Prevent creating tag if option already exists
+                let existsInOptions = false;
+                $designationSelect.find('option').each(function () {
+                    if ($(this).text().toLowerCase() === termLower) {
+                        existsInOptions = true;
+                        return false;
+                    }
+                });
 
-                if (exists) return null;
+                if (existsInOptions) return null;
 
                 return {
                     id: termLower,
@@ -680,7 +832,7 @@ let datas = {
         });
 
         /* ----------------------------------------
-        COMMA SPLIT HANDLER (ENTER / TAB / PASTE)
+        COMMA SPLIT HANDLER (TAB / ENTER / PASTE)
         ----------------------------------------- */
 
         function splitAndCreateTags(value) {
@@ -711,9 +863,16 @@ let datas = {
 
             // ENTER / TAB
             input.off('keydown.split').on('keydown.split', function (e) {
+
+                // 🔑 If Select2 has highlighted option → let Select2 select it
+                const highlighted = $('.select2-results__option--highlighted');
+
+                if (e.key === 'Enter' && highlighted.length > 0) {
+                    return; // let Select2 handle existing option
+                }
+
                 if (e.key === 'Enter' || e.key === 'Tab') {
                     const value = input.val();
-
                     if (value) {
                         e.preventDefault();
                         splitAndCreateTags(value);
@@ -734,7 +893,6 @@ let datas = {
             });
         });
     },
-
 
 
 
