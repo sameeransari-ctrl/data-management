@@ -30,7 +30,7 @@
         </div>
     </div> -->
     <div class="row g-3">
-        <h4>Coming Soons</h4>
+        <h4>Coming Soon</h4>
     </div>
 </form>
 {{-- add question validation --}}
