@@ -11,7 +11,7 @@
             <em class="icon ni ni-alert-circle"></em> <label><span id="errorVal"></span> {{__('labels.errors_found')}}</label>
         </div>
     </div>
-    <div class="row g-3">
+    <!-- <div class="row g-3">
         <div class="col-md-12">
             <div class="form-group">
                 <label class="form-label">{{__('labels.data_file')}}</label>
@@ -28,6 +28,9 @@
                 <button type="button" data-bs-dismiss="modal" class="btn btn btn-light" id="dataCancelBtn">{{__('labels.cancel')}}</button>
             </div>
         </div>
+    </div> -->
+    <div class="row g-3">
+        <h4>Coming Soon</h4>
     </div>
 </form>
 {{-- add question validation --}}
